@@ -1,5 +1,6 @@
 "© 2026 Punksm4ck. All rights reserved."
 "© 2026 Punksm4ck. All rights reserved."
+"© 2026 Punksm4ck. All rights reserved."
 #!/bin/bash
 echo " Setting up ICE Detention Center Tracker            "
 echo "===================================================="
