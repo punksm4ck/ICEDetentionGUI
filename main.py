@@ -1,3 +1,4 @@
+"© 2026 Punksm4ck. All rights reserved."
 #!/usr/bin/env python3
 import logging, os, sys
 from pathlib import Path
