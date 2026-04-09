@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        html,body,#map { height:100%; width:100%; margin:0; background:#080c16; font-family: sans-serif; }
+        .popup-title { color: #ff4d4d; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 4px; margin-bottom: 4px; }
+        .popup-note { font-style: italic; color: #ffea00; font-size: 10px; margin-top: 5px; border-top: 1px solid #333; padding-top: 4px; }
+        .data-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px; }
+        .data-label { color: #a9a9a9; }
+        .data-val { color: #fff; font-weight: bold; }
+        .stat-danger { color: #ff4d4d; font-weight: bold; }
+        .stat-warn { color: #ffea00; font-weight: bold; }
+        .data-pending { color: #666; font-style: italic; font-size: 9px;}
+        .leaflet-popup-content-wrapper { background: #1a1a2e; color: #e0e0e0; border: 1px solid #444; }
+        .leaflet-popup-tip { background: #1a1a2e; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        var map, markers, radii;
+        var _showSensitive = false;
+
+        function initMap() {
+            if (typeof L === 'undefined') {
+                setTimeout(initMap, 200);
+                return;
+            }
+            map = L.map('map', {zoomControl: false}).setView([37.8, -96], 4);
+            L.control.zoom({position: 'topright'}).addTo(map);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CARTO'
+            }).addTo(map);
+
+            markers = L.layerGroup().addTo(map);
+            radii = L.layerGroup().addTo(map);
+        }
+        initMap();
+
+        window.toggleSensitive = function(on) {
+            _showSensitive = on;
+            window.refreshMap();
+        };
+
+        window.loadDatacenters = function(data) {
+            window._lastData = data;
+            window.refreshMap();
+        };
+
+        window.refreshMap = function() {
+            if (!markers || !window._lastData) {
+                setTimeout(window.refreshMap, 300);
+                return;
+            }
+            markers.clearLayers(); radii.clearLayers();
+            window._lastData.forEach(function(f) {
+                if (f.category === 'Sensitive' && !_showSensitive) return;
+
+                var color = (f.category === 'Office') ? '#00e0ff' :
+                            (f.category === 'Sensitive') ? '#ffea00' : '#ff4d4d';
+
+                var m = L.circleMarker([f.lat, f.lng], {
+                    radius: f.category === 'Office' ? 7 : (f.category === 'Sensitive' ? 5 : 9),
+                    fillColor: color, color: "#000", weight: 1.5, fillOpacity: 0.9
+                });
+
+                var popup = `<div class="popup-title">${f.name}</div>`;
+                popup += `<div class="data-row"><span class="data-label">Type:</span> <span class="data-val">${f.category}</span></div>`;
+                popup += `<div class="data-row"><span class="data-label">Operator:</span> <span class="data-val">${f.operator}</span></div>`;
+
+                if (f.capacity > 0) {
+                    popup += `<div class="data-row" style="margin-top:6px;"><span class="data-label">Est. Capacity:</span> <span class="data-val">${f.capacity.toLocaleString()}</span></div>`;
+
+                    if (f.population > 0) {
+                        popup += `<div class="data-row"><span class="data-label">Verified Pop:</span> <span class="data-val">${f.population.toLocaleString()}</span></div>`;
+                    } else {
+                        popup += `<div class="data-row"><span class="data-label">Verified Pop:</span> <span class="data-pending">Classified / Pending API</span></div>`;
+                    }
+
+                    if (f.deaths > 0) {
+                        popup += `<div class="data-row" style="margin-top:6px;"><span class="data-label">Recorded Deaths:</span> <span class="stat-danger">${f.deaths} (Verified)</span></div>`;
+                    }
+                    if (f.pregnancies > 0) {
+                        popup += `<div class="data-row"><span class="data-label">Reported Pregnancies:</span> <span class="stat-warn">${f.pregnancies} (Verified)</span></div>`;
+                    }
+                }
+
+                if (f.note) { popup += `<div class="popup-note">⚠ ${f.note}</div>`; }
+
+                m.bindPopup(popup);
+                markers.addLayer(m);
+
+                if (_showSensitive && f.category === 'Office') {
+                    L.circle([f.lat, f.lng], {
+                        radius: 16093.4, color: '#00e0ff', weight: 1, fillOpacity: 0.08, dashArray: '5, 10'
+                    }).addTo(radii);
+                }
+            });
+        };
+    </script>
+</body>
+</html>
