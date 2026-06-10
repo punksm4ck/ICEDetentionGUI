@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        html,body,#map { height:100%; width:100%; margin:0; padding:0; background:#010409; }
+
+        #hud {
+            position:absolute; top:8px; right:8px; z-index:9999;
+            background:rgba(1,4,9,0.92); border:1px solid rgba(255,77,77,0.30);
+            border-radius:8px; padding:10px 14px; font:11px monospace;
+            color:#8b949e; min-width:210px;
+        }
+        #hud .hud-title {
+            color:rgba(255,77,77,0.75); letter-spacing:1.5px; font-size:9px;
+            border-bottom:1px solid rgba(255,77,77,0.15); padding-bottom:5px; margin-bottom:7px;
+        }
+        #hud .hud-row { display:flex; justify-content:space-between; margin:3px 0; }
+        #hud .hud-val { color:#c9d1d9; font-weight:bold; }
+        #hud .hud-bar-bg {
+            height:5px; background:rgba(255,77,77,0.12); border-radius:3px;
+            margin:5px 0 8px; overflow:hidden;
+        }
+        #hud .hud-bar-fill { height:100%; background:#ff4d4d; border-radius:3px; transition:width 0.5s; }
+
+        #status {
+            position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
+            z-index:9999; background:rgba(1,4,9,0.85); color:#8b949e;
+            font:11px monospace; padding:4px 10px; border-radius:4px;
+            border:1px solid rgba(255,77,77,0.2); pointer-events:none;
+        }
+
+        /* Popup overrides */
+        .leaflet-popup-content-wrapper {
+            background:rgba(1,4,9,0.96) !important;
+            border:1px solid rgba(255,77,77,0.30) !important;
+            border-radius:8px !important; color:#c9d1d9 !important;
+            box-shadow:0 4px 24px rgba(0,0,0,0.7) !important;
+        }
+        .leaflet-popup-tip { background:rgba(1,4,9,0.96) !important; }
+        .leaflet-popup-content { margin:10px 13px !important; font:11px monospace !important; min-width:200px; }
+        .pop-name { color:#ff7b72; font-size:12px; font-weight:bold; margin-bottom:6px; }
+        .pop-row { display:flex; justify-content:space-between; margin:2px 0; color:#8b949e; }
+        .pop-row span { color:#c9d1d9; }
+        .pop-bar-bg { height:4px; background:rgba(255,77,77,0.15); border-radius:2px; margin:6px 0 2px; }
+        .pop-bar-fill { height:100%; border-radius:2px; }
+        .pop-occ-label { font-size:9px; color:rgba(139,148,158,0.6); margin-bottom:4px; }
+        .pop-type { font-size:9px; color:rgba(139,148,158,0.55); margin-top:5px; border-top:1px solid rgba(255,77,77,0.10); padding-top:4px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div id="hud">
+        <div class="hud-title">⬡ NATIONAL DETENTION METRICS</div>
+        <div class="hud-row">Facilities mapped <span class="hud-val" id="h-count">—</span></div>
+        <div class="hud-row">Total capacity (known) <span class="hud-val" id="h-cap">—</span></div>
+        <div class="hud-row">Occupied (latest pop.) <span class="hud-val" id="h-occ">—</span></div>
+        <div class="hud-row">Available beds <span class="hud-val" id="h-free">—</span></div>
+        <div class="hud-bar-bg"><div class="hud-bar-fill" id="h-bar" style="width:0%"></div></div>
+        <div class="hud-row" style="font-size:9px;">Occupancy rate <span class="hud-val" id="h-rate">—</span></div>
+        <div class="hud-row" style="margin-top:6px;">Data through <span class="hud-val" id="h-date">—</span></div>
+    </div>
+
+    <div id="status">Fetching facility data…</div>
+
+    <script>
+    var map, markers;
+
+    // Known capacity for major facilities (public record / ICE FOIA / news reports)
+    var KNOWN_CAPACITY = {
+        'DILLEY':2400,'KARNES':1158,'PORT ISABEL':1500,'LAREDO':258,
+        'SOUTH TEXAS':1890,'HOUSTON CONTRACT':1000,'MONTGOMERY':1091,
+        'BLUEBONNET':1300,'WEST TEXAS':441,'RIO GRANDE':950,
+        'WILLACY':1069,'ELOY':1596,'FLORENCE SPC':780,'LA PALMA':3060,
+        'FLORENCE CORRECTIONAL':1824,'ADELANTO':1940,'CALIFORNIA CITY':2560,
+        'IMPERIAL REGIONAL':704,'MESA VERDE':400,'STEWART':2040,
+        'IRWIN':1200,'LASALLE':1319,'PINE PRAIRIE':1070,'WINN':1538,
+        'TENSAS':1205,'ADAMS COUNTY':2400,'WILKINSON':1000,
+        'NORTHWEST ICE':1575,'BAKER COUNTY':859,'BROWARD TRANSITIONAL':700,
+        'KROME':608,'GLADES':692,'PINELLAS':400,'YORK':2500,
+        'PIKE COUNTY':400,'FOLKSTON':1100,'TACOMA':1575,'TACOMA NORTHWEST':1575,
+        'EL PASO CAMP EAST':3000,'EL PASO CAMP MONTANA':2000,
+        'SOCIAL CIRCLE':10000,'SOCORRO':8500,'SURPRISE':7500,
+    };
+
+    function capKey(name) {
+        var n = (name || '').toUpperCase();
+        for (var k in KNOWN_CAPACITY) {
+            if (n.indexOf(k) !== -1) return KNOWN_CAPACITY[k];
+        }
+        return null;
+    }
+
+    function parseCSVLine(line) {
+        var result=[], cur='', inQ=false;
+        for (var i=0; i<line.length; i++) {
+            var c=line[i];
+            if (c==='"') { inQ=!inQ; }
+            else if (c===','&&!inQ) { result.push(cur); cur=''; }
+            else { cur+=c; }
+        }
+        result.push(cur);
+        return result;
+    }
+
+    function parseCSV(text) {
+        var lines=text.trim().split('\n'), headers=parseCSVLine(lines[0]), rows=[];
+        for (var i=1; i<lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            var vals=parseCSVLine(lines[i]), obj={};
+            headers.forEach(function(h,idx){ obj[h.trim()]=(vals[idx]||'').trim(); });
+            rows.push(obj);
+        }
+        return rows;
+    }
+
+    function initMap() {
+        if (typeof L==='undefined') { setTimeout(initMap,100); return; }
+        map=L.map('map').setView([37.8,-96],4);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'CartoDB'}).addTo(map);
+        markers=L.layerGroup().addTo(map);
+        loadAll();
+    }
+
+    function loadAll() {
+        var BASE='https://raw.githubusercontent.com/vera-institute/ice-detention-trends/main/';
+        var metaUrl  = BASE+'metadata/facilities.csv';
+        var popUrl   = BASE+'facilities/by_fiscal_year/FY2026.csv';
+
+        document.getElementById('status').textContent='Loading metadata…';
+
+        Promise.all([
+            fetch(metaUrl).then(function(r){ if(!r.ok) throw r.status; return r.text(); }),
+            fetch(popUrl).then(function(r){ if(!r.ok) throw r.status; return r.text(); })
+        ]).then(function(results) {
+            document.getElementById('status').textContent='Parsing & joining…';
+            var meta = parseCSV(results[0]);
+            var pop  = parseCSV(results[1]);
+
+            // Build population lookup: code -> {latest_pop, latest_date}
+            var popMap={};
+            pop.forEach(function(r){
+                var code=r['detention_facility_code'];
+                var mp=parseInt(r['midnight_pop'])||0;
+                var dt=r['date']||'';
+                if (!popMap[code] || dt > popMap[code].date) {
+                    popMap[code]={pop:mp, date:dt};
+                }
+            });
+
+            var totalCap=0, totalOcc=0, latestDate='', facilityCount=0;
+
+            meta.forEach(function(f){
+                var lat=parseFloat(f['latitude']);
+                var lng=parseFloat(f['longitude']);
+                if (isNaN(lat)||isNaN(lng)) return;
+
+                var code=f['detention_facility_code']||'';
+                var name=f['detention_facility_name']||'Unknown';
+                var city=f['city']||'';
+                var state=f['state']||'';
+                var type=f['type_grouped']||f['type_detailed']||'';
+                var addr=f['address']||'';
+
+                var pd=popMap[code];
+                var occ= pd ? pd.pop : null;
+                var dt = pd ? pd.date : null;
+                if (dt && dt > latestDate) latestDate=dt;
+
+                var cap=capKey(name);
+                var free = (cap!==null && occ!==null) ? Math.max(0,cap-occ) : null;
+                var pct  = (cap && occ!==null) ? Math.min(100,Math.round(occ/cap*100)) : null;
+
+                if (cap)       totalCap+=cap;
+                if (occ!==null) totalOcc+=occ;
+                facilityCount++;
+
+                // Dot color: red=known high occ, orange=construction/planned, dim=no pop data
+                var color = '#ff4d4d';
+                if (type && (type.toLowerCase().indexOf('hotel')!==-1 || type.toLowerCase().indexOf('hold')!==-1)) color='#f0a84a';
+                if (!occ && occ!==0) color='rgba(255,77,77,0.55)';
+
+                var m=L.circleMarker([lat,lng],{
+                    radius:5, fillColor:color, color:'#000', weight:0.5, fillOpacity:0.80
+                });
+
+                // Build popup HTML
+                var html='<div class="pop-name">'+name+'</div>';
+                if (city||state) html+='<div class="pop-row">Location <span>'+[city,state].filter(Boolean).join(', ')+'</span></div>';
+                if (addr) html+='<div class="pop-row">Address <span style="font-size:9px">'+addr+'</span></div>';
+                if (occ!==null) html+='<div class="pop-row">Detained (midnight) <span>'+occ.toLocaleString()+'</span></div>';
+                if (cap)        html+='<div class="pop-row">Reported capacity <span>'+cap.toLocaleString()+'</span></div>';
+                if (free!==null)html+='<div class="pop-row">Available beds <span style="color:'+(free>0?'#44cf7e':'#ff4d4d')+'">'+free.toLocaleString()+'</span></div>';
+                if (pct!==null) {
+                    var barColor = pct>90?'#ff4d4d':pct>65?'#f0a84a':'#44cf7e';
+                    html+='<div class="pop-bar-bg"><div class="pop-bar-fill" style="width:'+pct+'%;background:'+barColor+'"></div></div>';
+                    html+='<div class="pop-occ-label">Occupancy '+pct+'%</div>';
+                }
+                if (dt) html+='<div class="pop-row">Data date <span style="font-size:9px">'+dt+'</span></div>';
+                if (type) html+='<div class="pop-type">'+type+'</div>';
+
+                m.bindPopup(html, {maxWidth:260});
+                markers.addLayer(m);
+            });
+
+            // Update HUD
+            var rate = totalCap ? Math.round(totalOcc/totalCap*100) : null;
+            document.getElementById('h-count').textContent = facilityCount.toLocaleString();
+            document.getElementById('h-cap').textContent   = totalCap ? totalCap.toLocaleString()+' beds' : 'partial';
+            document.getElementById('h-occ').textContent   = totalOcc.toLocaleString()+' people';
+            document.getElementById('h-free').textContent  = totalCap ? Math.max(0,totalCap-totalOcc).toLocaleString()+' beds' : '—';
+            document.getElementById('h-rate').textContent  = rate ? rate+'%' : '—';
+            document.getElementById('h-date').textContent  = latestDate || '—';
+            if (rate) document.getElementById('h-bar').style.width=Math.min(rate,100)+'%';
+
+            document.getElementById('status').textContent = facilityCount+' facilities loaded · pop. data for '+Object.keys(popMap).length+' sites';
+            setTimeout(function(){ document.getElementById('status').style.display='none'; },5000);
+
+        }).catch(function(err){
+            console.warn('Data load failed:',err);
+            document.getElementById('status').textContent='Live data unavailable — using local data';
+            setTimeout(function(){ document.getElementById('status').style.display='none'; },3000);
+        });
+    }
+
+    // Fallback for Python-injected local data
+    window.loadDatacenters = function(data) {
+        if (!markers) { setTimeout(function(){ window.loadDatacenters(data); },200); return; }
+        if (markers.getLayers && markers.getLayers().length>0) return;
+        data.forEach(function(f){
+            var color=(f.status==='construction')?'#e3b341':'#ff4d4d';
+            var m=L.circleMarker([f.lat,f.lng],{radius:f.capacity>5000?12:7,fillColor:color,color:'#000',weight:1,fillOpacity:0.8});
+            m.bindPopup('<b>'+f.name+'</b><br>Beds: '+f.capacity.toLocaleString());
+            markers.addLayer(m);
+        });
+    };
+
+    initMap();
+    </script>
+</body>
+</html>
