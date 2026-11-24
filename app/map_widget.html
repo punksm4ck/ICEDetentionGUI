@@ -65,7 +65,7 @@
             map = L.map("map", { zoomControl: false }).setView([36.8, -98.5], 4);
             L.control.zoom({ position: "topright" }).addTo(map);
 
-            darkLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            darkLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
                 attribution: "&copy; OpenStreetMap contributors"
             }).addTo(map);
 
