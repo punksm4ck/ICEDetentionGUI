@@ -313,7 +313,7 @@ class MainWindow(QMainWindow):
             f"<b style='color:#ff6a00;font-size:13px;'>{f.name}</b><br>"
             f"<span style='color:#00e5ff;'>{f.category} &bull; {f.source}</span><br><br>"
             f"<b>Location:</b> {f.city}, {f.state} ({f.lat:.4f}, {f.lng:.4f})<br>"
-            f"<b>Distance from Simi Valley:</b> {f.distance_miles():.1f} mi<br>"
+            f"<b>Distance from Your location:</b> {f.distance_miles():.1f} mi<br>"
             f"<b>Operator:</b> {f.operator}<br>"
             f"<b>Status:</b> {f.status.upper()}<br>"
             f"<b>Est. Capacity / 2026 ADP:</b> {f.capacity:,} / {f.population:,}<br>"
@@ -337,7 +337,13 @@ class MainWindow(QMainWindow):
         if near:
             near.sort(key=lambda x: x.distance_miles())
             self.statusBar().showMessage(
-                f"⚠ SIMI VALLEY PROXIMITY: {len(near)} WIRED expansion hubs within 75 mi (Closest: {near[0].city} at {near[0].distance_miles()} mi).",
+                f"⚠ YOUR LOCATION PROXIMITY: {len(near)} WIRED expansion hubs within 75 mi (Closest: {near[0].city} at {near[0].distance_miles()} mi).",
+                0
+            )
+        elif FACILITIES:
+            closest = min(FACILITIES, key=lambda x: x.distance_miles())
+            self.statusBar().showMessage(
+                f"⚠ YOUR LOCATION PROXIMITY: Closest tracked facility is {closest.name} ({closest.city}, {closest.state}) at {closest.distance_miles()} mi.",
                 0
             )
 

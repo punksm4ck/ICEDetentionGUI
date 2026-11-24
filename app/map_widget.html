@@ -151,7 +151,7 @@
                 popup += `<div class="popup-badge" style="background:${color};color:#000;">${f.category} &bull; ${f.source}</div>`;
                 popup += `<div class="data-row"><span class="data-label">Location:</span><span class="data-val">${f.city}, ${f.state}</span></div>`;
                 popup += `<div class="data-row"><span class="data-label">Operator:</span><span class="data-val">${f.operator}</span></div>`;
-                popup += `<div class="data-row"><span class="data-label">Distance (Simi Valley):</span><span class="stat-cyan">${f.distance_mi} mi</span></div>`;
+                popup += `<div class="data-row"><span class="data-label">Distance (Your location):</span><span class="stat-cyan">${f.distance_mi} mi</span></div>`;
 
                 if (f.capacity > 0) {
                     popup += `<div class="data-row"><span class="data-label">Est. Capacity:</span><span class="data-val">${f.capacity.toLocaleString()}</span></div>`;

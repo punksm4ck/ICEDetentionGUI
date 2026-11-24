@@ -12,7 +12,25 @@ CACHE_DIR = Path.home() / ".local/share/ice-investigative-tracker"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = CACHE_DIR / "intel_cache.db"
 
-HOME_COORDS = (34.2694, -118.7815)
+USER_COORDS = (39.8283, -98.5795)
+
+def detect_user_location():
+    global USER_COORDS
+    for url in ("https://ipinfo.io/json", "http://ip-api.com/json/"):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Punksm4ck-ICE-Tracker/4.0"})
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                data = json.loads(resp.read().decode("utf-8", errors="ignore"))
+                if "loc" in data and "," in str(data["loc"]):
+                    lat_s, lng_s = str(data["loc"]).split(",", 1)
+                    USER_COORDS = (float(lat_s), float(lng_s))
+                    return USER_COORDS
+                if "lat" in data and "lon" in data:
+                    USER_COORDS = (float(data["lat"]), float(data["lon"]))
+                    return USER_COORDS
+        except Exception:
+            continue
+    return USER_COORDS
 
 @dataclass
 class DetentionCenter:
@@ -33,7 +51,9 @@ class DetentionCenter:
     pregnancies: int = 0
     non_criminal_pct: float = 0.0
 
-    def distance_miles(self, origin=HOME_COORDS):
+    def distance_miles(self, origin=None):
+        if origin is None:
+            origin = USER_COORDS
         r = 3958.8
         phi1, phi2 = math.radians(origin[0]), math.radians(self.lat)
         dphi = math.radians(self.lat - origin[0])
@@ -151,6 +171,8 @@ def load_initial_data():
 
 def sync_live_data():
     global FACILITIES, LAST_SYNC_STATUS
+    detect_user_location()
+    detect_user_location()
     merged = list(PRIORITY_INTEL)
     added_codes = {f.id for f in merged}
     added_names = {f.name.lower() for f in merged}
@@ -246,4 +268,5 @@ def export_geojson(items, filepath):
     with open(filepath, "w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=2)
 
+detect_user_location()
 load_initial_data()
