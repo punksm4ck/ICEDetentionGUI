@@ -22,7 +22,7 @@ STYLE = """
 QMainWindow { background: #010409; }
 QToolBar { background: #0d1117; border-bottom: 1px solid #30363d; padding: 5px; spacing: 6px; }
 QStatusBar { background: #0d1117; border-top: 1px solid #30363d; color: #8b949e; font-size: 11px; font-weight: bold; }
-QLabel { color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, monospace; }
+QLabel { color: #c9d1d9; font-family: "Menlo", "Monaco", monospace; }
 QPushButton { background: #161b22; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; padding: 5px 10px; font-size: 11px; font-weight: 600; }
 QPushButton:hover { background: #21262d; border-color: #00e5ff; }
 QPushButton:checked { background: rgba(0, 229, 255, 0.16); color: #00e5ff; border-color: #00e5ff; }
@@ -54,6 +54,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(STYLE)
         self.filtered_facilities = list(FACILITIES)
         self.basemap_mode = "dark"
+        self.map_ready = False
         self.kpi_labels = {}
         self._build_ui()
         self._tick_timestamp()
@@ -197,7 +198,7 @@ class MainWindow(QMainWindow):
 
         html_path = Path(__file__).resolve().parent / "map_widget.html"
         self.webview.setHtml(html_path.read_text(encoding="utf-8"), QUrl.fromLocalFile(str(html_path.parent) + "/"))
-        self.webview.loadFinished.connect(lambda ok: self._push_data() if ok else None)
+        self.webview.loadFinished.connect(self._on_map_loaded)
 
         self.chat = AIChatSidebar()
         self.chat.setVisible(False)
@@ -249,8 +250,14 @@ class MainWindow(QMainWindow):
             self.state_filter.setCurrentIndex(idx)
         self.state_filter.blockSignals(False)
 
+    def _on_map_loaded(self, ok):
+        if ok:
+            self.map_ready = True
+            self._push_data()
+
     def _push_data(self):
-        self.webview.page().runJavaScript(f"loadDatacenters({get_facilities_as_json()});")
+        if self.map_ready:
+            self.webview.page().runJavaScript(f"if (typeof loadDatacenters === 'function') loadDatacenters({get_facilities_as_json()});")
         self._apply_filters()
 
     def _apply_filters(self):
@@ -275,8 +282,9 @@ class MainWindow(QMainWindow):
         self._populate_table()
         self._update_kpis()
 
-        js = f"applyFilters({json.dumps(q)}, {json.dumps(st)}, {json.dumps(cats)}, {str(rings).lower()});"
-        self.webview.page().runJavaScript(js)
+        if self.map_ready:
+            js = f"if (typeof applyFilters === 'function') applyFilters({json.dumps(q)}, {json.dumps(st)}, {json.dumps(cats)}, {str(rings).lower()});"
+            self.webview.page().runJavaScript(js)
 
     def _populate_table(self):
         self.table.setRowCount(len(self.filtered_facilities))
@@ -296,7 +304,8 @@ class MainWindow(QMainWindow):
         if idx < 0 or idx >= len(self.filtered_facilities):
             return
         f = self.filtered_facilities[idx]
-        self.webview.page().runJavaScript(f"flyToFacility({json.dumps(f.id)});")
+        if self.map_ready:
+            self.webview.page().runJavaScript(f"if (typeof flyToFacility === 'function') flyToFacility({json.dumps(f.id)});")
         self.inspector.setHtml(
             f"<b style='color:#ff6a00;font-size:13px;'>{f.name}</b><br>"
             f"<span style='color:#00e5ff;'>{f.category} &bull; {f.source}</span><br><br>"
@@ -330,7 +339,8 @@ class MainWindow(QMainWindow):
 
     def _toggle_basemap(self, on):
         mode = "satellite" if on else "dark"
-        self.webview.page().runJavaScript(f"setBasemap({json.dumps(mode)});")
+        if self.map_ready:
+            self.webview.page().runJavaScript(f"if (typeof setBasemap === 'function') setBasemap({json.dumps(mode)});")
 
     def _export_filtered(self):
         path, selected_filter = QFileDialog.getSaveFileName(
