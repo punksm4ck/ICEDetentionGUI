@@ -140,11 +140,12 @@ class MainWindow(QMainWindow):
 
         kpi_specs = [
             ("total", "MAPPED NODES", "DashValue"),
-            ("national_pop", "NATIONAL POP (TRAC)", "DashOrange"),
+            ("national_pop", "DETAINED (TRAC JUL 26)", "DashOrange"),
             ("non_criminal_pct", "NO CRIMINAL CONVICTION", "DashCyan"),
+            ("atd_monitored", "ATD MONITORED (TRAC)", "DashValue"),
             ("wired_offices", "WIRED LEASES / HUBS", "DashCyan"),
             ("warehouses", "WAREHOUSES / BUYOUTS", "DashOrange"),
-            ("total_deaths", "RECORDED DEATHS", "DashDanger")
+            ("fy26_deaths", "FY26 DEATHS (60 IN 25-26)", "DashDanger")
         ]
         for key, label_text, css_class in kpi_specs:
             card = QFrame()
@@ -315,7 +316,8 @@ class MainWindow(QMainWindow):
         self.kpi_labels["non_criminal_pct"].setText(f"{stats['non_criminal_pct']}%")
         self.kpi_labels["wired_offices"].setText(str(stats["wired_offices"]))
         self.kpi_labels["warehouses"].setText(str(stats["warehouses"]))
-        self.kpi_labels["total_deaths"].setText(str(stats["total_deaths"]))
+        self.kpi_labels["atd_monitored"].setText(f"{stats['atd_monitored']:,}")
+        self.kpi_labels["fy26_deaths"].setText(str(stats["fy26_deaths"]))
 
     def _check_proximity_alert(self):
         near = [f for f in FACILITIES if f.category == "Office" and f.distance_miles() < 75]

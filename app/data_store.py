@@ -31,7 +31,7 @@ class DetentionCenter:
     population: int = 0
     deaths: int = 0
     pregnancies: int = 0
-    non_criminal_pct: float = 70.6
+    non_criminal_pct: float = 0.0
 
     def distance_miles(self, origin=HOME_COORDS):
         r = 3958.8
@@ -71,6 +71,7 @@ PRIORITY_INTEL = [
     DetentionCenter("ms-adams", "Adams County Correctional Center", "CoreCivic", "MS", "Natchez", 31.5604, -91.3210, "operational", 2200, "Detention", "TRAC 2026", "High-volume Gulf Coast transfer hub.", 1878, 1, 2, 71.4),
     DetentionCenter("tx-southtexas", "South Texas ICE Processing Center", "GEO Group", "TX", "Pearsall", 28.8914, -99.0950, "operational", 1904, "Detention", "TRAC 2026", "Primary San Antonio AOR intake center.", 1703, 2, 4, 70.2),
     DetentionCenter("ca-adelanto", "Adelanto ICE Processing Center", "GEO Group", "CA", "Adelanto", 34.5586, -117.4419, "operational", 1940, "Detention", "TRAC / Vera 2026", "Largest active Southern California detention facility.", 1686, 3, 2, 68.5),
+        DetentionCenter("wa-nwipc-buyout", "Northwest ICE Processing Center", "DHS Federal Buyout (ex-GEO)", "WA", "Tacoma", 47.2529, -122.4111, "buyout", 1575, "Warehouse", "Senate / DHS Nov 2026", "DHS $453M direct federal acquisition under Inspector General scrutiny (Nov 2026).", 1350, 0, 0, 0.0),
     DetentionCenter("ca-calcity-buyout", "California City Immigration Processing Center", "DHS Federal Buyout (ex-CoreCivic)", "CA", "California City", 35.1464, -117.8556, "buyout", 2560, "Warehouse", "TIME / Marshall Project 2026", "Part of $1.5B DHS direct federal acquisition of CoreCivic private prisons.", 1654, 0, 1, 70.9),
     DetentionCenter("fl-alligator", "Florida Soft-Sided Facility-South", "FDEM / DHS", "FL", "Ochopee", 25.9018, -81.3034, "expansion", 2000, "Warehouse", "News / Investigative 2026", "Rapid-deployment soft-sided site ('Alligator Alcatraz'); 1,300-1,800 ADP.", 1550, 0, 0, 74.0),
     DetentionCenter("il-broadview", "Broadview Service Staging Facility", "ICE / ERO", "IL", "Broadview", 41.8639, -87.8534, "staging", 450, "Staging", "Vera / News 2026", "Midwest hold and rapid-transfer staging site omitted from routine public counts.", 310, 0, 0, 73.2),
@@ -207,8 +208,9 @@ def get_stats(items=None):
         "national_pop": 65765,
         "peak_pop": 73400,
         "non_criminal_pct": 70.6,
-        "atd_monitored": 183181,
-        "total_deaths": max(46, sum(f.deaths for f in data))
+        "atd_monitored": 180701,
+        "fy26_deaths": 37,
+        "term_deaths": 60
     }
 
 def get_facilities_as_json():
