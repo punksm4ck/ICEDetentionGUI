@@ -1,104 +1,186 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        html,body,#map { height:100%; width:100%; margin:0; background:#080c16; font-family: sans-serif; }
-        .popup-title { color: #ff4d4d; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 4px; margin-bottom: 4px; }
-        .popup-note { font-style: italic; color: #ffea00; font-size: 10px; margin-top: 5px; border-top: 1px solid #333; padding-top: 4px; }
-        .data-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px; }
-        .data-label { color: #a9a9a9; }
-        .data-val { color: #fff; font-weight: bold; }
-        .stat-danger { color: #ff4d4d; font-weight: bold; }
-        .stat-warn { color: #ffea00; font-weight: bold; }
-        .data-pending { color: #666; font-style: italic; font-size: 9px;}
-        .leaflet-popup-content-wrapper { background: #1a1a2e; color: #e0e0e0; border: 1px solid #444; }
-        .leaflet-popup-tip { background: #1a1a2e; }
+        .dark-tiles .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%); }
+        html, body, #map { height: 100%; width: 100%; margin: 0; background: #080c16; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+        .popup-title { color: #ff6a00; font-weight: 700; font-size: 13px; border-bottom: 1px solid #2b3240; padding-bottom: 5px; margin-bottom: 6px; }
+        .popup-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+        .popup-note { color: #ffea00; font-size: 10px; margin-top: 6px; border-top: 1px solid #2b3240; padding-top: 5px; line-height: 1.35; }
+        .data-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; gap: 12px; }
+        .data-label { color: #8b949e; }
+        .data-val { color: #f0f6fc; font-weight: 600; text-align: right; }
+        .stat-danger { color: #ff4d4d; font-weight: 700; }
+        .stat-cyan { color: #00e5ff; font-weight: 700; }
+        .leaflet-popup-content-wrapper { background: #0d1117; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.65); }
+        .leaflet-popup-tip { background: #0d1117; }
+        .legend-card { position: absolute; bottom: 18px; left: 18px; z-index: 999; background: rgba(13, 17, 23, 0.92); border: 1px solid #30363d; border-radius: 8px; padding: 10px 12px; color: #c9d1d9; font-size: 11px; backdrop-filter: blur(6px); }
+        .legend-title { color: #00e5ff; font-weight: 700; font-size: 10px; letter-spacing: 1px; margin-bottom: 6px; text-transform: uppercase; }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1px solid #000; }
+        .counter-pill { position: absolute; top: 14px; left: 18px; z-index: 999; background: rgba(13, 17, 23, 0.92); border: 1px solid #ff6a00; border-radius: 20px; padding: 5px 12px; color: #ffffff; font-size: 11px; font-weight: 700; }
     </style>
 </head>
 <body>
     <div id="map"></div>
+    <div class="counter-pill" id="nodeCounter">VISIBLE NODES: 0</div>
+    <div class="legend-card">
+        <div class="legend-title">2026 Intel Layers</div>
+        <div class="legend-item"><span class="dot" style="background:#ff4d4d;"></span> Active Detention (Vera/TRAC)</div>
+        <div class="legend-item"><span class="dot" style="background:#00e5ff;"></span> WIRED Secret Lease / Hub</div>
+        <div class="legend-item"><span class="dot" style="background:#ff6a00;"></span> Mega-Warehouse / DHS Buyout</div>
+        <div class="legend-item"><span class="dot" style="background:#b366ff;"></span> Hidden Hold / Staging Site</div>
+        <div class="legend-item"><span class="dot" style="background:#ffea00;"></span> Sensitive Proximity Zone</div>
+    </div>
+
     <script>
-        var map, markers, radii;
-        var _showSensitive = false;
+        var map, markers, radii, darkLayer, satLayer;
+        var markerIndex = {};
+        var _allData = [];
+        var _filterState = {
+            query: "",
+            state: "ALL",
+            categories: { Detention: true, Office: true, Warehouse: true, Staging: true, Sensitive: false },
+            showRings: false
+        };
+
+        var CAT_COLORS = {
+            Detention: "#ff4d4d",
+            Office: "#00e5ff",
+            Warehouse: "#ff6a00",
+            Staging: "#b366ff",
+            Sensitive: "#ffea00"
+        };
 
         function initMap() {
-            if (typeof L === 'undefined') {
+            if (typeof L === "undefined") {
                 setTimeout(initMap, 200);
                 return;
             }
-            map = L.map('map', {zoomControl: false}).setView([37.8, -96], 4);
-            L.control.zoom({position: 'topright'}).addTo(map);
+            map = L.map("map", { zoomControl: false }).setView([36.8, -98.5], 4);
+            L.control.zoom({ position: "topright" }).addTo(map);
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; CARTO'
+            darkLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: "&copy; OpenStreetMap contributors"
             }).addTo(map);
 
+            satLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+                attribution: "Esri World Imagery"
+            });
+
+            document.getElementById("map").classList.add("dark-tiles");
             markers = L.layerGroup().addTo(map);
             radii = L.layerGroup().addTo(map);
         }
         initMap();
 
-        window.toggleSensitive = function(on) {
-            _showSensitive = on;
-            window.refreshMap();
+        window.setBasemap = function(mode) {
+            if (!map) return;
+            if (mode === "satellite") {
+                document.getElementById("map").classList.remove("dark-tiles");
+                if (map.hasLayer(darkLayer)) map.removeLayer(darkLayer);
+                if (!map.hasLayer(satLayer)) satLayer.addTo(map);
+            } else {
+                document.getElementById("map").classList.add("dark-tiles");
+                if (map.hasLayer(satLayer)) map.removeLayer(satLayer);
+                if (!map.hasLayer(darkLayer)) darkLayer.addTo(map);
+            }
         };
 
         window.loadDatacenters = function(data) {
-            window._lastData = data;
+            _allData = data || [];
             window.refreshMap();
         };
 
+        window.applyFilters = function(query, stateCode, categoriesObj, showRings) {
+            _filterState.query = (query || "").toLowerCase();
+            _filterState.state = stateCode || "ALL";
+            _filterState.categories = categoriesObj || _filterState.categories;
+            _filterState.showRings = !!showRings;
+            window.refreshMap();
+        };
+
+        window.flyToFacility = function(id) {
+            var m = markerIndex[id];
+            if (m && map) {
+                map.flyTo(m.getLatLng(), 11, { duration: 1.1 });
+                setTimeout(function() { m.openPopup(); }, 600);
+            }
+        };
+
         window.refreshMap = function() {
-            if (!markers || !window._lastData) {
-                setTimeout(window.refreshMap, 300);
+            if (!markers) {
+                setTimeout(window.refreshMap, 250);
                 return;
             }
-            markers.clearLayers(); radii.clearLayers();
-            window._lastData.forEach(function(f) {
-                if (f.category === 'Sensitive' && !_showSensitive) return;
+            markers.clearLayers();
+            radii.clearLayers();
+            markerIndex = {};
+            var visible = 0;
 
-                var color = (f.category === 'Office') ? '#00e0ff' :
-                            (f.category === 'Sensitive') ? '#ffea00' : '#ff4d4d';
+            _allData.forEach(function(f) {
+                if (!_filterState.categories[f.category]) return;
+                if (_filterState.state !== "ALL" && f.state !== _filterState.state) return;
+
+                if (_filterState.query) {
+                    var hay = (f.name + " " + f.city + " " + f.state + " " + f.operator + " " + f.source + " " + f.note).toLowerCase();
+                    if (hay.indexOf(_filterState.query) === -1) return;
+                }
+
+                visible++;
+                var color = CAT_COLORS[f.category] || "#ff4d4d";
+                var radius = f.category === "Warehouse" ? 10 :
+                             f.category === "Office" ? 8 :
+                             f.category === "Sensitive" ? 6 :
+                             (f.population > 1500 ? 11 : 7);
 
                 var m = L.circleMarker([f.lat, f.lng], {
-                    radius: f.category === 'Office' ? 7 : (f.category === 'Sensitive' ? 5 : 9),
-                    fillColor: color, color: "#000", weight: 1.5, fillOpacity: 0.9
+                    radius: radius,
+                    fillColor: color,
+                    color: "#000000",
+                    weight: 1.5,
+                    fillOpacity: 0.9
                 });
 
                 var popup = `<div class="popup-title">${f.name}</div>`;
-                popup += `<div class="data-row"><span class="data-label">Type:</span> <span class="data-val">${f.category}</span></div>`;
-                popup += `<div class="data-row"><span class="data-label">Operator:</span> <span class="data-val">${f.operator}</span></div>`;
+                popup += `<div class="popup-badge" style="background:${color};color:#000;">${f.category} &bull; ${f.source}</div>`;
+                popup += `<div class="data-row"><span class="data-label">Location:</span><span class="data-val">${f.city}, ${f.state}</span></div>`;
+                popup += `<div class="data-row"><span class="data-label">Operator:</span><span class="data-val">${f.operator}</span></div>`;
+                popup += `<div class="data-row"><span class="data-label">Distance (Simi Valley):</span><span class="stat-cyan">${f.distance_mi} mi</span></div>`;
 
                 if (f.capacity > 0) {
-                    popup += `<div class="data-row" style="margin-top:6px;"><span class="data-label">Est. Capacity:</span> <span class="data-val">${f.capacity.toLocaleString()}</span></div>`;
-
-                    if (f.population > 0) {
-                        popup += `<div class="data-row"><span class="data-label">Verified Pop:</span> <span class="data-val">${f.population.toLocaleString()}</span></div>`;
-                    } else {
-                        popup += `<div class="data-row"><span class="data-label">Verified Pop:</span> <span class="data-pending">Classified / Pending API</span></div>`;
-                    }
-
-                    if (f.deaths > 0) {
-                        popup += `<div class="data-row" style="margin-top:6px;"><span class="data-label">Recorded Deaths:</span> <span class="stat-danger">${f.deaths} (Verified)</span></div>`;
-                    }
-                    if (f.pregnancies > 0) {
-                        popup += `<div class="data-row"><span class="data-label">Reported Pregnancies:</span> <span class="stat-warn">${f.pregnancies} (Verified)</span></div>`;
-                    }
+                    popup += `<div class="data-row"><span class="data-label">Est. Capacity:</span><span class="data-val">${f.capacity.toLocaleString()}</span></div>`;
+                }
+                if (f.population > 0) {
+                    popup += `<div class="data-row"><span class="data-label">2026 ADP Pop:</span><span class="data-val">${f.population.toLocaleString()}</span></div>`;
+                }
+                if (f.deaths > 0) {
+                    popup += `<div class="data-row"><span class="data-label">Recorded Deaths:</span><span class="stat-danger">${f.deaths}</span></div>`;
+                }
+                if (f.note) {
+                    popup += `<div class="popup-note">${f.note}</div>`;
                 }
 
-                if (f.note) { popup += `<div class="popup-note">⚠ ${f.note}</div>`; }
-
-                m.bindPopup(popup);
+                m.bindPopup(popup, { maxWidth: 320 });
                 markers.addLayer(m);
+                markerIndex[f.id] = m;
 
-                if (_showSensitive && f.category === 'Office') {
+                if (_filterState.showRings && (f.category === "Office" || f.category === "Warehouse")) {
                     L.circle([f.lat, f.lng], {
-                        radius: 16093.4, color: '#00e0ff', weight: 1, fillOpacity: 0.08, dashArray: '5, 10'
+                        radius: 16093.4,
+                        color: color,
+                        weight: 1,
+                        fillOpacity: 0.08,
+                        dashArray: "5, 8"
                     }).addTo(radii);
                 }
             });
+
+            var counter = document.getElementById("nodeCounter");
+            if (counter) counter.textContent = "VISIBLE NODES: " + visible.toLocaleString();
         };
     </script>
 </body>
