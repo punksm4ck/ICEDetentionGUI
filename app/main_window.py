@@ -22,7 +22,7 @@ STYLE = """
 QMainWindow { background: #010409; }
 QToolBar { background: #0d1117; border-bottom: 1px solid #30363d; padding: 5px; spacing: 6px; }
 QStatusBar { background: #0d1117; border-top: 1px solid #30363d; color: #8b949e; font-size: 11px; font-weight: bold; }
-QLabel { color: #c9d1d9; font-family: "Menlo", "Monaco", monospace; }
+QLabel { color: #c9d1d9; font-family: Menlo, "Monaco"; }
 QPushButton { background: #161b22; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; padding: 5px 10px; font-size: 11px; font-weight: 600; }
 QPushButton:hover { background: #21262d; border-color: #00e5ff; }
 QPushButton:checked { background: rgba(0, 229, 255, 0.16); color: #00e5ff; border-color: #00e5ff; }

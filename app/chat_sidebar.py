@@ -73,7 +73,7 @@ class _Bubble(QFrame):
         lay = QVBoxLayout(self)
         self.body = QLabel(text)
         self.body.setWordWrap(True)
-        self.body.setFont(QFont("Monospace", 9))
+        self.body.setFont(QFont("Menlo", 9))
         self.body.setStyleSheet("color:#d0e8ff; line-height:1.4;")
         lay.addWidget(self.body)
         color = "rgba(40,80,140,0.35)" if role == "user" else "rgba(60,30,100,0.30)"

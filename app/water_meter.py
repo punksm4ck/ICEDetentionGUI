@@ -18,7 +18,7 @@ class WaterStatusWidget(QWidget):
         hl.setSpacing(14)
         def _lbl(text, color):
             l = QLabel(text)
-            l.setFont(QFont("Monospace", 10))
+            l.setFont(QFont("Menlo", 10))
             l.setStyleSheet(f"color:{color};")
             return l
         sep = QFrame(); sep.setFrameShape(QFrame.Shape.VLine)

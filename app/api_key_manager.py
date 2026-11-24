@@ -52,7 +52,7 @@ class ApiKeyDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Groq API Access — Investigative Tracker")
         self.setFixedWidth(400)
-        self.setStyleSheet("QDialog { background: #0d1117; } QLabel { color: #c9d1d9; font-family: monospace; } QLineEdit { background: #161b22; border: 1px solid #30363d; color: #c9d1d9; padding: 5px; }")
+        self.setStyleSheet("QDialog { background: #0d1117; } QLabel { color: #c9d1d9; font-family: Menlo; } QLineEdit { background: #161b22; border: 1px solid #30363d; color: #c9d1d9; padding: 5px; }")
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel("ENTER GROQ API KEY:"))
         self.input = QLineEdit()
