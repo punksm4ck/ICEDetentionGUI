@@ -87,6 +87,12 @@ PRIORITY_INTEL = [
     DetentionCenter("wire-pa-berwyn", "Berwyn Surge Office", "GSA / ERO", "PA", "Berwyn", 40.0459, -75.4424, "planned", 0, "Office", "WIRED Leak Feb 2026", "Planned suburban surge hub near Hillside Elementary.", 0, 0, 0, 70.6),
     DetentionCenter("wh-tx-dallas", "North Texas Mega-Warehouse Conversion", "DHS / Turnkey", "TX", "Hutchins", 32.6487, -96.7128, "planned", 7500, "Warehouse", "Freedom for Immigrants 2026", "Part of 7+ confirmed warehouse acquisitions targeting 30,000+ beds.", 0, 0, 0, 70.6),
     DetentionCenter("wh-az-phoenix", "West Valley Industrial Holding Warehouse", "DHS / Turnkey", "AZ", "Goodyear", 33.4353, -112.3577, "planned", 5000, "Warehouse", "Freedom for Immigrants 2026", "Planned large-scale industrial conversion facility.", 0, 0, 0, 70.6),
+        DetentionCenter("preg-la-basile", "South Louisiana ICE Processing Center (Maternal)", "GEO Group / ICE", "LA", "Basile", 30.4860, -92.6001, "operational", 1000, "Pregnancy", "Guardian / DHS FOIA 2026", "Highest documented miscarriage cluster in 2025 DHS FOIA records (18 national miscarriages Jan-Oct 3, 2025; tracking halted Oct 3, 2025).", 920, 0, 14, 0.0),
+    DetentionCenter("preg-nm-otero", "Otero County Processing Center (Maternal)", "MTC / ICE", "NM", "Chaparral", 32.0365, -106.3822, "operational", 1089, "Pregnancy", "Guardian / DHS FOIA 2026", "Documented in-custody miscarriage in 2025 DHS FOIA medical billing records.", 850, 0, 6, 0.0),
+    DetentionCenter("preg-ky-campbell", "Campbell County Detention Center (Maternal)", "County / ICE IGSA", "KY", "Newport", 39.0914, -84.4958, "operational", 600, "Pregnancy", "Guardian Sept 2026", "Documented pregnant asylum seeker hospitalized in ER after delayed prenatal/emergency care.", 240, 0, 3, 0.0),
+    DetentionCenter("preg-tx-pearsall", "South Texas IPC (Maternal Oversight)", "GEO Group / ICE", "TX", "Pearsall", 28.8935, -99.0920, "operational", 1904, "Pregnancy", "Guardian / DHS FOIA 2026", "Documented miscarriage and pregnant detainee custody reports in 2025-2026.", 1703, 2, 8, 0.0),
+    DetentionCenter("preg-ga-stewart", "Stewart Detention Center (Maternal Oversight)", "CoreCivic / ICE", "GA", "Lumpkin", 32.0455, -84.7860, "operational", 2040, "Pregnancy", "ACLU / Senate 2026", "Documented pregnant and postpartum detainees held under medical neglect complaints.", 2010, 4, 5, 0.0),
+    DetentionCenter("preg-ca-adelanto", "Adelanto IPC (Maternal Oversight)", "GEO Group / ICE", "CA", "Adelanto", 34.5610, -117.4390, "operational", 1940, "Pregnancy", "LA Times / ACLU 2026", "Southern California hub with reported pregnant detainees held despite 2021 directive.", 1686, 3, 4, 0.0),
     DetentionCenter("sens-pa-hill", "Hillside Elementary", "Civilian", "PA", "Berwyn", 40.0600, -75.4600, "civilian", 0, "Sensitive", "Proximity Watch", "Sensitive school zone near planned Berwyn surge office.", 0, 0, 0, 0.0),
     DetentionCenter("sens-tx-primrose", "Primrose Preschool", "Civilian", "TX", "The Woodlands", 30.1620, -95.4630, "civilian", 0, "Sensitive", "Proximity Watch", "Sensitive childcare zone near The Woodlands OPLA hub.", 0, 0, 0, 0.0),
     DetentionCenter("sens-nj-roseland", "Roseland Child Development Center", "Civilian", "NJ", "Roseland", 40.8225, -74.3115, "civilian", 0, "Sensitive", "Proximity Watch", "Sensitive childcare zone near Roseland ERO hub.", 0, 0, 0, 0.0),
@@ -210,7 +216,9 @@ def get_stats(items=None):
         "non_criminal_pct": 70.6,
         "atd_monitored": 180701,
         "fy26_deaths": 37,
-        "term_deaths": 60
+        "term_deaths": 60,
+        "reported_pregnancies": 121,
+        "miscarriages_2025": 18
     }
 
 def get_facilities_as_json():

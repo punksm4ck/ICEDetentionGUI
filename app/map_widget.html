@@ -33,6 +33,7 @@
         <div class="legend-item"><span class="dot" style="background:#00e5ff;"></span> WIRED Secret Lease / Hub</div>
         <div class="legend-item"><span class="dot" style="background:#ff6a00;"></span> Mega-Warehouse / DHS Buyout</div>
         <div class="legend-item"><span class="dot" style="background:#b366ff;"></span> Hidden Hold / Staging Site</div>
+        <div class="legend-item"><span class="dot" style="background:#ff2e93;"></span> Reported Pregnancies / Maternal Risk</div>
         <div class="legend-item"><span class="dot" style="background:#ffea00;"></span> Sensitive Proximity Zone</div>
     </div>
 
@@ -43,7 +44,7 @@
         var _filterState = {
             query: "",
             state: "ALL",
-            categories: { Detention: true, Office: true, Warehouse: true, Staging: true, Sensitive: false },
+            categories: { Detention: true, Office: true, Warehouse: true, Staging: true, Pregnancy: true, Sensitive: false },
             showRings: false
         };
 
@@ -52,6 +53,7 @@
             Office: "#00e5ff",
             Warehouse: "#ff6a00",
             Staging: "#b366ff",
+            Pregnancy: "#ff2e93",
             Sensitive: "#ffea00"
         };
 
@@ -156,6 +158,9 @@
                 }
                 if (f.population > 0) {
                     popup += `<div class="data-row"><span class="data-label">2026 ADP Pop:</span><span class="data-val">${f.population.toLocaleString()}</span></div>`;
+                }
+                if (f.pregnancies > 0) {
+                    popup += `<div class="data-row"><span class="data-label">Reported Pregnancies:</span><span style="color:#ff2e93;font-weight:700;">${f.pregnancies} (Documented)</span></div>`;
                 }
                 if (f.deaths > 0) {
                     popup += `<div class="data-row"><span class="data-label">Recorded Deaths:</span><span class="stat-danger">${f.deaths}</span></div>`;

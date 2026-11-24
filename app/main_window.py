@@ -37,6 +37,7 @@ QTextEdit { background: #161b22; color: #e6edf3; border: 1px solid #30363d; bord
 .DashOrange { color: #ff6a00; font-size: 18px; font-weight: bold; }
 .DashCyan { color: #00e5ff; font-size: 18px; font-weight: bold; }
 .DashDanger { color: #ff4d4d; font-size: 18px; font-weight: bold; }
+.DashPink { color: #ff2e93; font-size: 18px; font-weight: bold; }
 """
 
 class SyncWorker(QThread):
@@ -86,6 +87,7 @@ class MainWindow(QMainWindow):
             ("Office", "WIRED LEASES", True),
             ("Warehouse", "WAREHOUSES", True),
             ("Staging", "STAGING", True),
+            ("Pregnancy", "PREGNANCY", True),
             ("Sensitive", "SENSITIVE", False)
         ]
         for key, label, checked in cat_specs:
@@ -146,6 +148,7 @@ class MainWindow(QMainWindow):
             ("atd_monitored", "ATD MONITORED (TRAC)", "DashValue"),
             ("wired_offices", "WIRED LEASES / HUBS", "DashCyan"),
             ("warehouses", "WAREHOUSES / BUYOUTS", "DashOrange"),
+            ("reported_pregnancies", "PREGNANT / PP (DHS)", "DashPink"),
             ("fy26_deaths", "FY26 DEATHS (60 IN 25-26)", "DashDanger")
         ]
         for key, label_text, css_class in kpi_specs:
@@ -314,7 +317,7 @@ class MainWindow(QMainWindow):
             f"<b>Operator:</b> {f.operator}<br>"
             f"<b>Status:</b> {f.status.upper()}<br>"
             f"<b>Est. Capacity / 2026 ADP:</b> {f.capacity:,} / {f.population:,}<br>"
-            f"<b>Recorded Deaths:</b> {f.deaths}<br><br>"
+            f"<b>Reported Pregnancies:</b> {f.pregnancies} &nbsp;|&nbsp; <b>Recorded Deaths:</b> {f.deaths}<br><br>"
             f"<span style='color:#ffea00;'>{f.note}</span>"
         )
 
@@ -326,6 +329,7 @@ class MainWindow(QMainWindow):
         self.kpi_labels["wired_offices"].setText(str(stats["wired_offices"]))
         self.kpi_labels["warehouses"].setText(str(stats["warehouses"]))
         self.kpi_labels["atd_monitored"].setText(f"{stats['atd_monitored']:,}")
+        self.kpi_labels["reported_pregnancies"].setText(str(stats["reported_pregnancies"]))
         self.kpi_labels["fy26_deaths"].setText(str(stats["fy26_deaths"]))
 
     def _check_proximity_alert(self):
